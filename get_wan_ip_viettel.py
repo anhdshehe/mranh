@@ -132,17 +132,18 @@ def get_wan_ip():
         report_changed = False
         # Save to html file
         report_name = os.path.join(os.path.dirname(__file__), 'current_ip_wan.txt')
-        with open(report_name, "r+", encoding="utf-8") as f:
+        with open(report_name, "r", encoding="utf-8") as f:
             old_ip = f.read().strip()
             if not old_ip == new_ip_wan:
                 report_changed = True
-                print(f"Save IP WAN to {report_name} file")
-                f.write(new_ip_wan)
-                print(f"Generate successfully file {report_name}")
         driver.close()
 
         # Push file to git
         if report_changed:
+            with open(report_name, "w+", encoding="utf-8") as f:
+                print(f"Save IP WAN to {report_name} file")
+                f.write(new_ip_wan)
+                print(f"Generate successfully file {report_name}")
             force_push(REMOTE_NAME, REVISION, [report_name])
 
     except Exception as ex:
