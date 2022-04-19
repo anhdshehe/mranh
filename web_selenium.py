@@ -9,13 +9,18 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
+import base64
+
 import io
 from bs4 import BeautifulSoup
 import xlsxwriter
 import datetime
 import time 
 WEBSITE_URL = "https://iboard.ssi.com.vn/bang-gia/chung-quyen"
+LOCAL_HOST_ADMIN = "http://192.168.1.1/"
 UPLOAD_REMOTE_URL = "git@bitbucket.org:anhdshehe/stocks.git"
+USER_NAME = "YWRtaW4="
+PASSWORD = "ODgxOTkwMkBBbmg="
 NO_PUSH_COMMIT = False
 DOWNLOADED_CHROME_DRIVER = 0
 remote_name = "origin"
@@ -106,6 +111,39 @@ FORMAT_HEADER = {
 COLUMN_WIDTH = 15
 HEADER_COLUM = 0
 START_DATA_COLUM = 1
+
+def decode_base64(text: str):
+    """
+    Decode base 64 from string
+
+    Args:
+        text (str): String to decode
+
+    Returns:
+        decoded_message: result
+    """
+    base64_bytes = text.encode('ascii')
+    message_bytes = base64.b64decode(base64_bytes)
+    decoded_message = message_bytes.decode('ascii')
+
+    return decoded_message
+
+
+def encode_base64(text: str):
+    """
+    Encode base 64 from string
+
+    Args:
+        text (str): String to encode
+
+    Returns:
+        encoded_message: result
+    """
+    message_bytes = text.encode('ascii')
+    base64_bytes = base64.b64encode(message_bytes)
+    encoded_message = base64_bytes.decode('ascii')
+    return encoded_message
+
 
 def main():
     try:
@@ -334,6 +372,50 @@ def download_chrome_driver_latest():
     os.remove('chromedriver.exe')
     DOWNLOADED_CHROME_DRIVER += 1
 
+def get_wan_ip():
+    # cd to file's directory
+    file_dir = os.path.dirname(__file__)
+    os.chdir(file_dir)
+    print("Current dir: {}".format(os.getcwd()))
+    print("Getting WAN IP from local host...")
+    # Get URL source
+    options = webdriver.ChromeOptions()
+    options.add_argument('--ignore-ssl-errors=yes')
+    options.add_argument('--ignore-certificate-errors')
+    driver = webdriver.Chrome(options=options)
+    driver.get(LOCAL_HOST_ADMIN)
+    # Wait until web load successfully
+    WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.ID, "username")))
+    # Fill username and password
+    driver.find_element_by_id('username').send_keys(decode_base64(USER_NAME))
+    driver.find_element_by_id('password').send_keys(decode_base64(PASSWORD))
+    driver.find_element_by_id('login-button').click()
+    # Wait until login successful
+    WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.ID, "ppp_ip4")))
+    # Get IP WAN
+    ip_wan = str(driver.find_element_by_id('ppp_ip4').text)
+    report_changed = False
+    # Save to html file
+    report_name = os.path.join(os.path.dirname(__file__), 'current_ip_wan.txt')
+    print(f"Save IP WAN to {report_name} file")
+    with open(report_name, "w+", encoding="utf-8") as f:
+        test = f.read().strip()
+        if not ip_wan == f.read().strip():
+            report_changed = True
+            f.write(ip_wan)
+    driver.close()
+
+    print(f"Generate successfully file {report_name}")
+    # print(table.prettify())
+    # Push file to git
+    if report_changed:
+        check_output("git pull {remote_name} {revision}".format(remote_name=remote_name, revision=revision), shell=True).decode()
+        check_output("git add {file_name}".format(file_name=report_name), shell=True).decode()
+        check_output("git commit -m \"Add {file_name}\"".format(file_name=report_name), shell=True).decode()
+        check_output("git push {remote_name} {revision}".format(remote_name=remote_name, revision=revision), shell=True).decode()
+
 
 if __name__ == '__main__':
-    main()
+    # main()
+    get_wan_ip()
+    print("Finish, have a nice day!")

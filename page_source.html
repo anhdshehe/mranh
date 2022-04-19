@@ -1,0 +1,836 @@
+<html><head>
+<title>Viettel ONT - Easy Setup</title>		<meta charset="utf-8">
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+		<meta http-equiv="x-ua-compatible" content="IE=edge">
+		<script language="javascript" src="/JS/jquery.js"></script>
+		<script language="javascript" src="/JS/util.js"></script>
+		<script language="javascript" src="/JS/bootstrap.bundle.min.js"></script>
+		<script language="javascript" src="/JS/pace.js"></script>
+		<link rel="stylesheet" type="text/css" href="/style.css">
+		<script language="JavaScript" type="text/JavaScript">
+			var first_load = 1;
+			var timer;
+			var timeout = 1200;
+			function logout_timer_run(t) {
+				clearTimeout(timer);
+				if (0 !=  Number(timeout))
+				{
+					timer = setTimeout(function(){ 
+						$.ajax({
+						   	url: '/cgi-bin/get_live_timeout.cgi',
+						   	method: 'GET',
+						   	complete: function(res){
+								 {
+									if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+										Pace.stop();
+									}
+									var obj = JSON.parse(res.responseText);
+									timeout = obj["timeout_left"];
+									if (timeout <= 1)
+										onDeleteSession();
+									else {
+										logout_timer_run();
+										return;
+									}
+								}
+							}
+						}
+						)
+					},  1000 * Number(timeout));
+				}
+			}
+			function submitLanguageForm(value) {
+				if (value != "2") {
+					document.LanguageForm.Language_Flag.value = value;
+					submitAsync('LanguageForm');
+				}
+			}
+		</script>		<script language="javascript" type="text/javascript">
+			/* Wi-Fi Widget */
+			var wAPEnable = "1";
+			var wSSIDEnable =  "1";
+			var wSSID =  "Mr_Anh_2.4G";
+			var wAuthType = "WPA2PSK";
+			var wPSK = "11111111";
+			var w11acAPEnable = "1";
+			var w11acSSIDEnable = "1";
+			var w11acSSID = "Mr_Anh_5G";
+			var w11acAuthType = "WPA2PSK";
+			var w11acPSK = "11111111";
+			var bandstrEnable = "0";
+			var hide_wifi = 0;
+			var wifi_24_on = wAPEnable&wSSIDEnable;
+			var wifi_5_on = w11acAPEnable&w11acSSIDEnable;
+			
+			function display_wifi(){
+				if ($("#Enable_AccessPoint").prop("checked") == true) {
+					$("#ESSID").prop("disabled",false);
+					$("#PreSharedKey").prop("disabled",false);
+					cs_enable("WEP_Selection");
+				}
+				else {
+					$("#ESSID").prop("disabled",true);
+					$("#PreSharedKey").prop("disabled",true);
+					cs_disable("WEP_Selection");
+				}
+			}
+			function display_wifi11ac(){
+				if ($("#wlan11ac_APenable").prop("checked") == true) {
+					$("#ESSID11AC").prop("disabled",false);
+					$("#PreSharedKey11AC").prop("disabled",false);
+					cs_enable("WEP_Selection_11ac");
+				}
+				else {
+					$("#ESSID11AC").prop("disabled",true);
+					$("#PreSharedKey11AC").prop("disabled",true);
+					cs_disable("WEP_Selection_11ac");
+				}
+			}
+			function doWEPChange(){
+				if ($("#WEP_Selection").val() == "OPEN") {
+					$("#PreSharedKey").parent().parent().hide();
+				}
+				else {
+					$("#PreSharedKey").parent().parent().show();
+				}
+			}
+			function doWEPChange_11ac(){
+				if ($("#WEP_Selection_11ac").val() == "OPEN") {
+					$("#PreSharedKey11AC").parent().parent().hide();
+				}
+				else {
+					$("#PreSharedKey11AC").parent().parent().show();
+				}
+			}
+			function onloadCheck_wifi() {
+				if (wAPEnable == "1") {
+					if (wSSIDEnable == "1") {
+						$("#Enable_AccessPoint").prop("checked", true);
+						$("#Enable_AccessPoint").val("1");
+					}
+					$("#HaveWifi-div").show();
+					$("#NoWifi-div").hide();
+				}
+				else {
+					$("#HaveWifi-div").hide();
+					$("#NoWifi-div").show();
+				}
+				if (w11acAPEnable == "1") {
+					if (w11acSSIDEnable == "1") {
+						$("#wlan11ac_APenable").prop("checked", true);
+						$("#wlan11ac_APenable").val("1");
+					}
+					$("#HaveWifi11ac-div").show();
+					$("#NoWifi11ac-div").hide();
+				}
+				else {
+					$("#HaveWifi11ac-div").hide();
+					$("#NoWifi11ac-div").show();
+				}
+				display_wifi();
+				display_wifi11ac();
+				doWEPChange();
+				doWEPChange_11ac();
+				ShowBandSteering(1);
+			}
+			function has_config_wifi() {
+				if (wSSIDEnable != $("#Enable_AccessPoint").val()) {
+					return true;
+				}
+				if (wAPEnable == "1") {
+					if (wSSID != $("#ESSID").val()) {
+						return true;
+					}
+					if (wAuthType != $("#WEP_Selection").val()) {
+						return true;
+					}
+					if (wAuthType != "OPEN") {
+						if (wPSK != $("#PreSharedKey").val()) {
+							return true;
+						}
+					}
+				}
+				return false;
+			}
+			function has_config_wifi11ac() {
+				if (w11acSSIDEnable != $("#wlan11ac_APenable").val()) {
+					return true;
+				}
+				if (w11acAPEnable == "1") {
+					if (w11acSSID != $("#ESSID11AC").val()) {
+						return true;
+					}
+					if (w11acAuthType != $("#WEP_Selection_11ac").val()) {
+						return true;
+					}
+					if (w11acAuthType != "OPEN") {
+						if (w11acPSK != $("#PreSharedKey11AC").val()) {
+							return true;
+						}
+					}
+				}
+				return false;
+			}
+			function has_config_bndstr() {
+				if ($("#Band_Steering_En").val() != bandstrEnable)
+					return true;
+				else
+					return false;
+			}
+			function quotationCheck(str, limit_len) {
+				var len = str.length;
+				var c;
+				var i, j = 0;
+				for (i = 0; i < len; i++)
+				{
+					var c = str.charAt(i);
+					if (c == '"')
+					{
+						j += 6;
+					}
+					else
+						j++;
+				}
+				if (j > limit_len-1)
+				{
+					alert('too many quotation marks!');
+					return true;
+				}
+				return false;
+			}
+			function strESSIDCheck(str) {
+				if(str.match(/[^\x00-\xff]/g)){
+					alert("SSID is invalid!");
+					return true;
+				}
+				if(str.length <= 0){
+					alert("SSID is empty!");
+					return true;
+				}
+				return false;
+			}
+			function doHexCheck(c) {
+				if(c >= "0" && c <= "9")
+					return 1;
+				if(c >= "A" && c <= "Z")
+					return 1;
+				if(c >= "a" && c <= "z")
+					return 1;
+				return -1;
+			}
+			function wpapskCheck(str) {
+				var keyvalue=str;
+				var wpapsklen=str.length;
+				if(wpapsklen >= 8 && wpapsklen < 64) {
+					if(keyvalue.match(/[^\x00-\xff]/g))
+					{
+						alert("Password should include 8 to 63 ASCII character or a Hex64 string.");
+						return true;
+					}
+				}else if(wpapsklen==64){
+					for(i=0;i<64;i++){
+						var c=keyvalue.charAt(i);
+						if(doHexCheck(c)<0){
+							alert("Password Hex value error!");
+							return true;
+						}
+					}
+				}else {
+					alert("Password should include 8 to 63 ASCII character or a Hex64 string.");
+					return true;
+				}
+				return false;
+			}	
+			/* WAN Widget */
+			var arPPPUsername = "";
+			var arPPPPassword = "";
+			var obj;
+			function updateResult(item, val) {
+				val1 = val.toLowerCase();
+				if( val1 == "no attribute information")
+				{
+					document.getElementById(item).innerHTML = "N/A";
+				}
+				if( val1 == "no node information")
+				{
+					document.getElementById(item).innerHTML = "N/A";
+				}
+				else
+				{
+					document.getElementById(item).innerHTML = val;
+				}
+			}
+			var topush;
+			function ajax_get_waninfo() {
+				$.ajax({
+					url: '/cgi-bin/get_pppacc.asp',
+					type: 'post',
+					dataType: 'json',
+					contentType: 'application/json',
+					success: function (data) {
+						var collecting = 0;
+						obj = data;
+						//var OLTType = "HUAWEI";
+						if ((obj.active != "Yes")) {									
+							$("#wandisabled_div").show();								
+							$("#wan_info").hide();
+							return;
+						}
+						updateResult("ppp_vlan",obj.vlan);
+						$("#new_ppp0usr").val(obj.user);
+						$("#new_ppp0pwd").val(obj.pass);
+						arPPPUsername=obj.user;
+						arPPPPassword=obj.pass;
+						$("#wan_ipver").val(obj.ipver);
+						if ((obj.ipver == "IPv4") || (obj.ipver == "IPv4/IPv6")) {
+							$("#ppp_ip4").show();
+							if (obj.waitip4 == "1") {
+								if ((parseInt(obj.curtime) - parseInt(obj.commitime)) < 120) {
+									updateResult("ppp_ip4","<div class='loading'>Getting IPv4</div>");
+									collecting = 1;
+								}
+								else {
+									updateResult("ppp_ip4",obj.ip4);
+								}
+							}
+							else {
+								updateResult("ppp_ip4",obj.ip4);
+							}
+						}
+						if ((obj.ipver == "IPv6") || (obj.ipver == "IPv4/IPv6")) {
+							$("#ppp_ip6").show();
+							if (obj.waitip6 == "1") {
+								if ((parseInt(obj.curtime) - parseInt(obj.commitime)) < 120) {
+									updateResult("ppp_ip6","<div class='loading'>Getting IPv6</div>");
+									collecting = 1;
+								}
+								else {
+									updateResult("ppp_ip6",obj.ip6);
+								}
+							}
+							else {
+								updateResult("ppp_ip6",obj.ip6);
+							}
+						}
+						if (collecting) {
+							setTimeout(ajax_get_waninfo, 5000);
+						}
+					},
+            		data: topush
+				});
+			}
+			function get_waninfo(hsi_index) {
+				var entry = parseInt(hsi_index)%8;
+				var pvc = (parseInt(hsi_index) - entry)/8;
+				$("#wan_pvc").val(pvc);
+				$("#wan_pvc_entry").val(entry);
+				$("#waninfo_index").val(hsi_index);
+				topush = {
+					TokenString: "uzarbTKjICX7mTytx5MRqDfLCIlxJmX5",
+					waninfo_index: hsi_index,
+					wan_pvc: pvc,
+					wan_pvc_entry: entry,
+					dv: "1"
+				}
+				ajax_get_waninfo();
+			}
+			function onloadCheck_wan() {
+				var pvc_counts=8;
+				//get all value
+				// num 0
+				var vArrayStr = "1_INTERNET_R_VID_35,2_TR069_R_VID_2501,3_OTHER_R_VID_-,4_OTHER_B_VID_-,4_OTHER_B_VID_-,5_OTHER_B_VID_-,6_OTHER_B_VID_-,7_OTHER_B_VID_-,";
+				Wan_WanName = vArrayStr.split(',');
+				vArrayStr = "ppp0,nas1_0,nas0_2,nas0_3,nas0_4,nas0_5,nas0_6,nas0_7,";
+				vArrayStr = "0,8,16,24,32,40,48,56,";
+				// num 3
+				vArrayStr = "Yes,Yes,No,No,No,No,No,No,";
+				Wan_Actives = vArrayStr.split(',');
+				vArrayStr = "Enable,Disabled,Disabled,Disabled,Disabled,Disabled,Disabled,Disabled,";
+				var WANEnNAT = vArrayStr.split(',');
+				vArrayStr = "nas0_0,nas1_0,nas0_2,nas0_3,nas0_4,nas0_5,nas0_6,nas0_7,";
+				vArrayStr = "IPv4/IPv6,IPv4,IPv4,IPv4,IPv4,IPv4,IPv4,IPv4,";
+				var WANIPver = vArrayStr.split(',');
+				vArrayStr = "up,up,N/A,N/A,N/A,N/A,N/A,N/A,";
+				vArrayStr = "10.142.139.15,19.221.241.187,N/A,N/A,N/A,N/A,N/A,N/A,";
+				// num 9		
+				vArrayStr = "PPPoE,DHCP,Static,,,,,,";
+				Wan_ENCAP = vArrayStr.split(',');
+				vArrayStr = "10.142.0.2,19.221.255.254,N/A,N/A,N/A,N/A,N/A,N/A,";
+				vArrayStr = "203.113.131.2,10.30.185.36,N/A,N/A,N/A,N/A,N/A,N/A,";
+				vArrayStr = "203.113.131.3,N/A,N/A,N/A,N/A,N/A,N/A,N/A,";
+				vArrayStr = "up,N/A,N/A,N/A,N/A,N/A,N/A,N/A,";
+				vArrayStr = "2402:800:61ce:8bcc:9d1a:5dd:6958:d171,N/A,N/A,N/A,N/A,N/A,N/A,N/A,";
+				vArrayStr = "fe80::cee1:7fff:fe0a:70ce,N/A,N/A,N/A,N/A,N/A,N/A,N/A,";
+				vArrayStr = "2402:800:20ff:6666::1,N/A,N/A,N/A,N/A,N/A,N/A,N/A,";
+				vArrayStr = "2402:800:20ff:8888::1,N/A,N/A,N/A,N/A,N/A,N/A,N/A,";
+				vArrayStr = "2402:800:61cf:8bcc::/64,2402:800:61cf:8bcc::/64,2402:800:61cf:8bcc::/64,2402:800:61cf:8bcc::/64,2402:800:61cf:8bcc::/64,2402:800:61cf:8bcc::/64,2402:800:61cf:8bcc::/64,2402:800:61cf:8bcc::/64,";
+				vArrayStr = "255.255.255.255,255.255.240.0,N/A,N/A,N/A,N/A,N/A,N/A,";
+				// num 20
+				var CycleV = "1,2,3,4,4,5,6,7,";
+				IFIdxArray = CycleV.split(',');
+				vArrayStr = "0,8,16,24,32,40,48,56,";
+				vEntryIndex = vArrayStr.split(',');
+				//var OLTType = "HUAWEI";
+				var isBridge = "0";
+				var hsi_index, i;
+				if ("0" != "N/A") {
+					hsi_index = "0";
+					i = vEntryIndex.indexOf(hsi_index);
+					if ((Wan_ENCAP[i] == "PPPoE") && (Wan_Actives[i] == "Yes") && (WANIPver[i].indexOf("IPv4") >= 0)) {
+						get_waninfo(hsi_index);
+						return;
+					}
+				}
+				if ("0" != "N/A") {
+					hsi_index = "0";
+					i = vEntryIndex.indexOf(hsi_index);
+					if ((Wan_ENCAP[i] == "PPPoE") && (Wan_Actives[i] == "Yes") && (WANIPver[i].indexOf("IPv6") >= 0)) {
+						get_waninfo(hsi_index);
+						return;
+					}
+				}
+				hsi_index = -1;
+				for (var i = 0; i < pvc_counts; i++) {
+					if (Wan_ENCAP[i] == "PPPoE") {
+						if (Wan_WanName[i].indexOf("INTERNET") != -1) {
+							if (Wan_Actives[i] == "Yes"){
+								if ((WANIPver[i] == "IPv6") || (WANEnNAT[i] == "Enable")) {
+									hsi_index = i;
+									break;
+								}
+							}
+						}
+					}
+				}
+				if (hsi_index != -1) {
+					get_waninfo(vEntryIndex[hsi_index]);
+					return;
+				}
+				if (isBridge != "1") {
+					get_waninfo(0);
+					return;
+				}
+				$("#nowan_div").show();
+				$("#wan_div").hide();
+			}
+			function has_config_wan() {
+				if (arPPPUsername != $('input[name="new_ppp0usr"]').val()) {
+					return true;
+				}
+				if (arPPPPassword != $('input[name="new_ppp0pwd"]').val()) {
+					return true;
+				}
+				return false;
+			}
+			/* Account Widget */
+			var signal = "N/A";
+			function has_config_account() {
+				if ($('input[name="passwd"]').val().length != 0) {
+					return true;
+				}
+				if ($('input[name="newpasswd"]').val().length != 0) {
+					return true;
+				}
+				if ($('input[name="cfpasswd"]').val().length != 0) {
+					return true;
+				}
+				return false;
+			}
+			function quotationCheck_Admin(password, limit_len) {
+				var len = password.length;
+				var c;
+				var i, j = 0;
+				for (i = 0; i < len; i++)
+				{
+					var c = password.charAt(i);
+					if (c == '"')
+					{
+						j += 6;
+					}
+					else
+						j++;
+				}
+				if (j > limit_len)
+				{
+					alert('You have entered too many characters!!');
+					return true;
+				}
+				return false;
+			}
+			function onloadCheck_account() {
+				
+				
+					
+				
+			}
+			/* Common functions */
+			function onloadCheck() {
+				if (hide_wifi == 0) {
+					onloadCheck_wifi();
+				}
+				else {
+					$("#wifi_div").hide();
+				}
+				onloadCheck_account();
+				onloadCheck_wan();
+			}
+			function doSubmit() {
+				/* WiFi Widget */
+				if (hide_wifi == 0) {
+					if (has_config_bndstr()) {
+						$('input[name="bndstrflg"]').val('1');
+						$('input[name="wififlg"]').val('1');
+					}
+					if (has_config_wifi()) {
+						if ($("#Enable_AccessPoint").val() == "1") {
+							if(quotationCheck($("#ESSID").val(), 193)||strESSIDCheck($("#ESSID").val())) {
+								$("#ESSID").focus();
+								return false;
+							}
+							if ($("#WEP_Selection").val() != "OPEN") {
+								if (wpapskCheck($("#PreSharedKey").val()))
+									return false;
+								if(quotationCheck($("#PreSharedKey").val(), 385))
+									return false;
+							}
+						}
+						$('input[name="wififlg"]').val('1');
+					}
+					if ($("#Band_Steering_En").prop("checked") != true) {	
+						if (has_config_wifi11ac()) {
+							if ($("#wlan11ac_APenable").val() == "1") {
+								if(quotationCheck($("#ESSID11AC").val(), 193)||strESSIDCheck($("#ESSID11AC").val())) {
+									$("#ESSID11AC").focus();
+									return false;
+								}
+								if ($("#WEP_Selection_11ac").val() != "OPEN") {
+									if (wpapskCheck($("#PreSharedKey11AC").val()))
+										return false;
+									if(quotationCheck($("#PreSharedKey11AC").val(), 385))
+										return false;
+								}
+							}
+							$('input[name="wifi11acflg"]').val('1');
+						}
+					}
+				}
+				else {
+					document.getElementById("wififlg").value = "0";
+					document.getElementById("wifi11acflg").value = "0";
+					document.getElementById("bndstrflg").value = "0";
+				}
+				/* WAN Widget */
+				if (has_config_wan()) {
+					if ($('input[name="new_ppp0usr"]').val().length == 0) {
+						alert("Empty Username is invalid.");
+						return false;
+					}
+					if ($('input[name="new_ppp0pwd"]').val().length == 0) {
+						alert("Empty Password is invalid.");
+						return false;
+					}
+					if($('input[name="new_ppp0usr"]').val() != arPPPUsername || $('input[name="new_ppp0pwd"]').val() != arPPPPassword)
+					{
+						$('input[name="wan0flg"]').val("1");
+					}
+					if (($("#wan_ipver").val() == "IPv4/IPv6") || ($("#wan_ipver").val()  == "IPv4")) {
+						$('input[name="waitforIP4"]').val("1");
+					}
+					if (($("#wan_ipver").val()  == "IPv4/IPv6") || ($("#wan_ipver").val()  == "IPv6")) {
+						$('input[name="waitforIP6"]').val("1");
+					}
+				}
+				/* Account Widget */
+				if (has_config_account()) {
+					var password = $('input[name="newpasswd"]').val();
+					if (password.length == 0) {
+						alert("Empty Password is invalid.");
+						return false;
+					}
+					for(var i = 0; i < password.length; i ++ ) {
+					   var ascNum = password.charCodeAt(i);
+					   if (ascNum < 33 || ascNum > 126 || ascNum == 59){
+							alert("Password is invalid. Password must not include semicolon, whitespace or characters of languages other than English!");
+							return false;
+						}
+					}
+					if (password != $('input[name="cfpasswd"]').val()) {
+						alert("New Password and Confirm Password do not match.");
+						return false;
+					}
+					if (password == $('input[name="passwd"]').val()) {
+						alert("New Password must be different form Current Password!");
+						return false;
+					}
+					if(quotationCheck_Admin(password, 30))
+						return false;
+					$('input[name="accountflg"]').val('1');
+				}
+				submitAsync('home_form');
+			}
+			function ShowBandSteering(onload) {
+				if ($("#Band_Steering_En").prop("checked") == true) {
+					$("#wlan11ac_div").hide();
+					$("#enable_ap_div").hide();
+					$("#wifi_legend").html("Wi-Fi Dualband Configuration");
+					$("#bndstr_note").show();
+					if (onload == 0) {
+						if ((wAPEnable != "1") || (wSSIDEnable != "1")) {
+							$("#HaveWifi-div").show();
+							$("#NoWifi-div").hide();
+							$("#ESSID").prop("disabled",false);
+							$("#PreSharedKey").prop("disabled",false);
+							cs_enable("WEP_Selection");
+						}
+					}
+				}
+				else {
+					if ((onload == 0)&( $("#ESSID").val() == $("#ESSID11AC").val())) {
+						var WifiSSID_bandsteering = $("#ESSID").val();
+						if(WifiSSID_bandsteering.includes("VIETTEL_"))
+						{
+							$("#ESSID11AC").val(WifiSSID_bandsteering.replace("VIETTEL_", "VIETTEL_5G_"));
+						}
+						else
+						{
+							$("#ESSID11AC").val(WifiSSID_bandsteering + "_5G");
+						}
+					}
+					if (onload == 0) {
+						if (wAPEnable != "1") {
+							$("#HaveWifi-div").hide();
+							$("#NoWifi-div").show();
+							$("#ESSID").prop("disabled",true);
+							$("#PreSharedKey").prop("disabled",true);
+							cs_disable("WEP_Selection");
+						}
+						if (wSSIDEnable != "1") {
+							$("#ESSID").prop("disabled",true);
+							$("#PreSharedKey").prop("disabled",true);
+							cs_disable("WEP_Selection");
+						}
+					}
+					$("#wlan11ac_div").show();
+					$("#enable_ap_div").show();
+					$("#wifi_legend").html("Wi-Fi 2.4GHz Configuration");
+					$("#bndstr_note").hide();
+				}
+			}
+		</script>
+	</head>
+	<body onload="onloadCheck();" class="pace-done container"><div class="pace pace-inactive"><div class="pace-progress" data-progress-text="100%" data-progress="99" style="transform: translate3d(100%, 0px, 0px);">
+  <div class="pace-progress-inner"></div>
+</div>
+<div class="pace-activity"></div></div>
+<header class="fixed-top"><nav id="top-nav" class="navbar navbar-expand-lg container"><a class="navbar-brand " href="/cgi-bin/home.asp"><div><img src="/img/logo_home.png" width="100" height="18" alt=""><div style="font-family: sans-serif; font-weight: bold;font-size: 12px;color: #000; margin-top: 0">OPTICAL NETWORK TERMINATION</div></div></a><button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"><em class="fas fa-align-justify"></em></span></button><div class="collapse navbar-collapse" id="navbarCollapse"><ul class="navbar-nav mr-auto sidenav" id="navAccordion"><li class="nav-item active"><a class="nav-link" href="/cgi-bin/home.asp">Easy Setup<span class="sr-only">(current)</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/deviceinfo.asp">Device Information<span class="sr-only"></span></a></li><li class="nav-item"><a class="nav-link nav-link-collapse" href="#" id="hasSubItems" data-toggle="collapse" data-target="#status-menu" aria-controls="status-menu" aria-expanded="false">Statistics</a><ul class="nav-second-level collapse" id="status-menu" data-parent="#navAccordion"><li class="nav-item"><a class="nav-link" href="/cgi-bin/sta-statistics.asp"><span class="nav-link-text">Traffic Statistics</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/sta-wifiusers.asp"><span class="nav-link-text">Wi-Fi Users</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/sta-users.asp"><span class="nav-link-text">Connected Devices</span></a></li></ul></li><li class="nav-item"><a class="nav-link nav-link-collapse" href="#" id="hasSubItems" data-toggle="collapse" data-target="#network-menu" aria-controls="network-menu" aria-expanded="false">Network</a><ul class="nav-second-level collapse" id="network-menu" data-parent="#navAccordion"><li class="nav-item"><a class="nav-link" href="/cgi-bin/net-wan.asp"><span class="nav-link-text">WAN Settings</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/net-lan.asp"><span class="nav-link-text">LAN Settings</span></a></li></ul></li><li class="nav-item"><a class="nav-link nav-link-collapse" href="#" id="hasSubItems" data-toggle="collapse" data-target="#wifi-menu" aria-controls="wifi-menu" aria-expanded="false">Wi-Fi</a><ul class="nav-second-level collapse" id="wifi-menu" data-parent="#navAccordion"><li class="nav-item"><a class="nav-link" href="/cgi-bin/wifi.asp"><span class="nav-link-text">Wi-Fi 2.4GHz Configuration</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/wifi-11ac.asp"><span class="nav-link-text">Wi-Fi 5GHz Configuration</span></a></li></ul></li><li class="nav-item"><a class="nav-link nav-link-collapse" href="#" id="hasSubItems" data-toggle="collapse" data-target="#firewall-menu" aria-controls="firewall-menu" aria-expanded="false">Security</a><ul class="nav-second-level collapse" id="firewall-menu" data-parent="#navAccordion"><li class="nav-item"><a class="nav-link" href="/cgi-bin/fw-spi.asp"><span class="nav-link-text">Firewall</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/fw-urlfilter.asp"><span class="nav-link-text">URL Filter</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/fw-macfilter.asp"><span class="nav-link-text">MAC Filter</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/fw-parentalcontrol.asp"><span class="nav-link-text">Parental control</span></a></li></ul></li><li class="nav-item"><a class="nav-link nav-link-collapse" href="#" id="hasSubItems" data-toggle="collapse" data-target="#apps-menu" aria-controls="apps-menu" aria-expanded="false">Applications</a><ul class="nav-second-level collapse" id="apps-menu" data-parent="#navAccordion"><li class="nav-item"><a class="nav-link" href="/cgi-bin/apps-dmz.asp"><span class="nav-link-text">DMZ</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/apps-portforwarding.asp"><span class="nav-link-text">Port Forwarding</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/apps-sslim.asp"><span class="nav-link-text">Sessions Limit</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/apps-route.asp"><span class="nav-link-text">Static Route</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/apps-ddns.asp"><span class="nav-link-text">Dynamic DNS</span></a></li></ul></li><li class="nav-item"><a class="nav-link nav-link-collapse" href="#" id="hasSubItems" data-toggle="collapse" data-target="#tools-menu" aria-controls="tools-menu" aria-expanded="false">Maintenance</a><ul class="nav-second-level collapse" id="tools-menu" data-parent="#navAccordion"><li class="nav-item"><a class="nav-link" href="/cgi-bin/tools-admin.asp"><span class="nav-link-text">Administration</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/tools-time.asp"><span class="nav-link-text">System Time</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/tools-firmware.asp"><span class="nav-link-text">Firmware</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/tools-config.asp"><span class="nav-link-text">Configurations</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/tools-diagnostic.asp"><span class="nav-link-text">Diagnostics</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/tools-log.asp"><span class="nav-link-text">System Logs</span></a></li><li class="nav-item"><a class="nav-link" href="/cgi-bin/tools-reboot.asp"><span class="nav-link-text">Reboot</span></a></li></ul></li></ul><div class="top-item-groups"><form name="LanguageForm" method="POST" action="/cgi-bin/home.asp" class="nav-item dropdown"><input type="hidden" name="TokenString" value="uzarbTKjICX7mTytx5MRqDfLCIlxJmX5"><input type="hidden" name="Language_Flag" value="2"><a class="nav-link dropdown-toggle" href="#" id="LanguageDropdown" role="button" data-toggle="dropdown" aria-expanded="false">Language</a><ul class="dropdown-menu" aria-labelledby="LanguageDropdown"><li><a class="dropdown-item " href="#" onclick="submitLanguageForm(1);">Tiếng Việt</a></li><li><a class="dropdown-item active" href="#" onclick="submitLanguageForm(2);">English</a></li></ul></form><div id="signout" class="nav-item"><a class="nav-link" href="javascript:doLogout();"><em class="fa fa-sign-out-alt"></em><span class="nav-link-text">Log out</span></a></div></div></div></nav></header>		<div id="content">
+			<form class="form-inline" method="POST" action="/cgi-bin/home.asp" name="home_form">
+			<input type="hidden" name="TokenString" value="uzarbTKjICX7mTytx5MRqDfLCIlxJmX5">
+			<input type="hidden" name="wififlg" value="0">
+			<input type="hidden" name="wifi11acflg" value="0">
+			<input type="hidden" name="wan0flg" value="0">
+			<input type="hidden" name="wan_pvc" id="wan_pvc" value="0">
+			<input type="hidden" name="wan_pvc_entry" id="wan_pvc_entry" value="0">
+			<input type="hidden" name="waninfo_index" id="waninfo_index" value="0">
+			<input type="hidden" name="accountflg" value="0">
+			<input type="hidden" name="bndstrflg" value="0">
+			<input type="hidden" name="waitforIP4" value="0">
+			<input type="hidden" name="waitforIP6" value="0">
+			<input type="hidden" name="wan_ipver" id="wan_ipver" value="IPv4/IPv6">
+			<div class="row row-w-100">
+				<div class="widget col-xs-12 col-lg-12" id="wifi_div">
+					<header>Wi-Fi</header>
+					<div class="d-flex flex-wrap widget-body">
+						<fieldset class="col-lg-6 mb-3">
+							<legend id="wifi_legend">Wi-Fi 2.4GHz Configuration</legend>
+							<div id="HaveWifi-div">
+								<div class="form-group" id="enable_ap_div">
+									<label class="col-lg-5" for="Enable_AccessPoint">Enable SSID1</label>
+									<label class="toggle-switch">
+										<input type="checkbox" name="Enable_AccessPoint" id="Enable_AccessPoint" onchange="display_wifi();" value="1">
+										<span class="slider"></span>
+									</label>
+								</div>
+								<div class="form-group">
+									<label class="col-lg-5" for="ESSID">Network Name (SSID1)</label>
+									<input type="text" class="form-control col-lg-6" name="ESSID" size="32" maxlength="32" id="ESSID" value="Mr_Anh_2.4G">
+								</div>
+								<div class="form-group">
+									<label class="col-lg-5" for="">Authentication Type</label>
+									<div class="col-lg-6 custom-select">
+										<select id="WEP_Selection" name="WEP_Selection" onchange="doWEPChange()">
+											<option value="OPEN">OPEN
+											</option><option value="WPAPSK">WPA-PSK</option>
+											<option value="WPA2PSK" selected="">WPA2-PSK
+											</option><option value="WPAPSKWPA2PSK">WPA/WPA2-PSK
+										</option></select>
+									<div class="select-selected">WPA2-PSK
+											</div><div class="select-items select-hide"><div>OPEN
+											</div><div>WPA-PSK</div><div class="same-as-selected">WPA2-PSK
+											</div><div>WPA/WPA2-PSK
+										</div></div></div>
+								</div>
+								<div class="form-group">
+									<label class="col-lg-5" for="PreSharedKey">Password</label>
+									<div class="input-group col-lg-6 px-0">
+										<input class="form-control" type="password" id="PreSharedKey" name="PreSharedKey" style="WIDTH:140" size="48" maxlength="63" value="11111111">
+										<div class="input-group-addon show-password-btn">
+											<a href="#"><i class="fa fa-eye-slash" aria-hidden="true"></i></a>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div id="NoWifi-div" class="form-group" style="display: none;">
+								<label class="text-justify pr-4">
+									<p>The 2.4GHz Access Point is currently disabled. To use Wi-Fi 2.4GHz, please enable Access Point in <a href="/cgi-bin/wifi.asp">Wi-Fi 2.4GHz Configuration</a>.</p>
+								</label>
+							</div>
+						</fieldset>
+						<fieldset class="col-lg-6 mb-3" id="wlan11ac_div">
+							<legend>Wi-Fi 5GHz Configuration</legend>
+							<div id="HaveWifi11ac-div">
+								<div class="form-group">
+									<label class="col-lg-5" for="wlan11ac_APenable">Enable SSIDAC1</label>
+									<label class="toggle-switch">
+										<input type="checkbox" name="wlan11ac_APenable" id="wlan11ac_APenable" onchange="display_wifi11ac();" value="1">
+										<span class="slider"></span>
+									</label>
+								</div>
+								<div class="form-group">
+									<label class="col-lg-5" for="ESSID11AC">Network Name (SSIDAC1)</label>
+									<input type="text" class="form-control col-lg-6" name="ESSID11AC" size="32" maxlength="32" id="ESSID11AC" value="Mr_Anh_5G">
+								</div>
+								<div class="form-group">
+									<label class="col-lg-5" for="">Authentication Type</label>
+									<div class="col-lg-6 custom-select">
+										<select id="WEP_Selection_11ac" name="WEP_Selection_11ac" onchange="doWEPChange_11ac()">
+											<option value="OPEN">OPEN
+											</option><option value="WPAPSK">WPA-PSK</option>
+											<option value="WPA2PSK" selected="">WPA2-PSK
+											</option><option value="WPAPSKWPA2PSK">WPA/WPA2-PSK
+										</option></select>
+									<div class="select-selected">WPA2-PSK
+											</div><div class="select-items select-hide"><div>OPEN
+											</div><div>WPA-PSK</div><div class="same-as-selected">WPA2-PSK
+											</div><div>WPA/WPA2-PSK
+										</div></div></div>
+								</div>
+								<div class="form-group">
+									<label class="col-lg-5" for="PreSharedKey11AC">Password</label>
+									<div class="input-group col-lg-6 px-0">
+										<input class="form-control" type="password" name="PreSharedKey11AC" size="32" maxlength="63" id="PreSharedKey11AC" value="11111111">
+										<div class="input-group-addon show-password-btn">
+											<a href="#"><i class="fa fa-eye-slash" aria-hidden="true"></i></a>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div id="NoWifi11ac-div" class="form-group" style="display: none;">
+								<label class="text-justify pr-4">
+									<p>The 5GHz Access Point is currently disabled. To use Wi-Fi 5GHz, please enable Access Point in <a href="/cgi-bin/wifi-11ac.asp">Wi-Fi 5GHz Configuration</a>.</p>
+								</label>
+							</div>
+						</fieldset>
+						<fieldset class="col-lg-12">
+							<legend>Band Steering Setting</legend>
+							<div class="form-group">
+								<label class="col-lg-2-5" for="Band_Steering_En">Band Steering</label>
+								<label class="toggle-switch">
+									<input type="checkbox" name="Band_Steering_En" id="Band_Steering_En" onclick="ShowBandSteering(0);" value="0">
+									<span class="slider"></span>
+								</label>
+								<label id="bndstr_note" class="input-description font-italic offset-lg-2-5 col-lg-8" style="display: none;">When Band Steering feature is enabled, both Wi-Fi bands are always enabled. In addition, SSID, Authentication Type and Password are synchronized between two bands. In order to disable Wi-Fi, you must disable Band Steering.</label>
+							</div>
+						</fieldset>
+					</div>
+				</div>
+				<div class="widget col-xs-12 col-lg-6">
+					<header>WAN PPPoE</header>
+					<div class="widget-body">
+						<fieldset id="nowan_div" style="display: none" class="form-group">
+							<label class="col-sm-12 text-justify"><p>Cannot find any valid INTERNET WAN, or the valid INTERNET WAN has been disabled. To make configuration on WAN, please go to&nbsp;<a href="/cgi-bin/net-wan.asp">WAN Settings</a>.</p></label>
+						</fieldset>
+						<fieldset id="wan_div">
+							<legend id="wan_name">
+							</legend>
+							<div class="form-group">
+								<label class="col-lg-5" for="new_ppp0usr">PPPoE Account</label>
+								<input type="text" class="form-control col-lg-7" name="new_ppp0usr" size="32" maxlength="64" id="new_ppp0usr" autocomplete="new-user" value="">
+							</div>
+							<div class="form-group">
+								<label class="col-lg-5" for="new_ppp0pwd">PPPoE Password</label>
+								<div class="input-group col-lg-7 px-0">
+									<input class="form-control" type="password" name="new_ppp0pwd" size="32" maxlength="64" id="new_ppp0pwd" autocomplete="new-password" value="">
+									<div class="input-group-addon show-password-btn">
+										<a href="#"><i class="fa fa-eye-slash" aria-hidden="true"></i></a>
+									</div>
+								</div>
+							</div>
+							<div id="wan_info">
+							<div class="form-group">
+								<label class="col-lg-5">VLAN</label>
+								<label class="status-value col-lg-7" id="ppp_vlan">35</label>
+							</div>
+							<div class="form-group">
+								<label class="col-lg-5">Current IP</label>
+								<label class="status-value col-lg-7" id="ppp_ip4" style="">10.142.139.15</label>
+								<label class="offset-lg-5 status-value col-lg-7" id="ppp_ip6" style="overflow-x: auto;">2402:800:61ce:8bcc:9d1a:5dd:6958:d171</label>
+							</div>
+							</div>
+						</fieldset>
+						<fieldset id="wandisabled_div" style="display: none" class="form-group">
+							<label class="col-sm-12 text-justify"><p>The PPPoE WAN is disabled, after you configure PPPoE Account and Password, it will be automatically enabled.</p></label>
+						</fieldset>
+					</div>
+				</div>
+				<div class="widget col-xs-12 col-lg-6">
+					<header>Change Password</header>
+					<div class="widget-body">
+						<div class="form-group">
+							<label class="col-lg-5">Username</label>
+							<label class="status-value col-lg-5">admin</label>
+						</div>
+						<div class="form-group">
+							<label class="col-lg-5" for="curpasswd">Current Password</label>
+							<div class="input-group col-lg-7 px-0">
+								<input class="form-control" type="password" name="passwd" size="32" maxlength="30" id="passwd" value="" autocomplete="off">
+								<div class="input-group-addon show-password-btn">
+									<a href="#"><i class="fa fa-eye-slash" aria-hidden="true"></i></a>
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-lg-5" for="newpasswd">New Password</label>
+							<div class="input-group col-lg-7 px-0">
+								<input class="form-control" type="password" name="newpasswd" size="32" maxlength="30" id="newpasswd" value="">
+								<div class="input-group-addon show-password-btn">
+									<a href="#"><i class="fa fa-eye-slash" aria-hidden="true"></i></a>
+								</div>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="col-lg-5" for="cfpasswd">Confirm Password</label>
+							<div class="input-group col-lg-7 px-0">
+								<input class="form-control" type="password" name="cfpasswd" size="32" maxlength="30" id="cfpasswd" value="">
+								<div class="input-group-addon show-password-btn">
+									<a href="#"><i class="fa fa-eye-slash" aria-hidden="true"></i></a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				</div>
+				<div class="col-lg-12 d-flex align-items-center justify-content-center">
+					<button type="button" class="page-button large-button" onclick="doSubmit();">APPLY</button>
+				</div>
+			</form></div>
+			
+		
+		<footer>
+			<p>Sale Consultant (free): <a href="tel:18008168">18008168</a></p>
+			<p>Report Problems (free): <a href="tel:18008119">18008119</a></p>
+			<p>© 2021 by VHT. All rights reserved.</p>
+		</footer>
+		<script language="javascript" src="/JS/user.js"></script>	
+
+</body></html>
