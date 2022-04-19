@@ -416,6 +416,6 @@ def get_wan_ip():
 
 
 if __name__ == '__main__':
-    # main()
+    main()
     get_wan_ip()
     print("Finish, have a nice day!")
